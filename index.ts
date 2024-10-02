@@ -2,8 +2,10 @@ import 'dotenv/config';
 import express, { type NextFunction, type Request, type Response } from 'express';
 import { clerkClient, clerkMiddleware, getAuth, requireAuth, type User } from '@clerk/express';
 import cors from "cors"
+import { Prisma, PrismaClient } from '@prisma/client';
+
+const prisma = new PrismaClient();
 const PORT = process.env.PORT;
-const usersInformation: User[] = []
 
 const app = express()
 app.use(cors())
@@ -38,6 +40,17 @@ app.use(clerkMiddleware())
 
 
 
+interface UserStructure {
+    id:         String;  
+    username?:       String;
+    firstName?:      String;
+    imageUrl?:       String;
+}
+
+const storeUserInDatabase = () => {
+  const storeUserDetails = {}
+}
+
 
 // you can do networkless verification of tokens using jwt library if you have the signing key
 
@@ -48,14 +61,57 @@ app.use(clerkMiddleware())
 // How can I use requireAuth with React rather than redirecting to a server url
 app.get('/protected', requireAuth({ signInUrl: '/sign-in' }), async (req, res) => {
   console.log("in protected")
-  // if the user is authenticated, this helper is used to the get the userId
+  try {
+    // if the user is authenticated, this helper is used to the get the userId
   const {userId} = getAuth(req)
   // this process fethces the current user's User object
   const user = await clerkClient.users.getUser(userId)
-  console.log("Logged In User Information: ", user)
-  const usersInformationKeys = Object.keys(user)
-  console.log(usersInformationKeys)
-})
+
+  const userEmail:string = user.emailAddresses[0]?.emailAddress
+  const userAuthSource:string = user.emailAddresses[0]?.linkedTo[0]?.type ?? 'unknown';
+  const { 
+    id: userID, 
+    imageUrl, 
+    username, 
+    firstName,
+  } = user
+
+  console.log("######")
+  // console.log(userEmail, '\n', userAuthSource, '\n', userID,'\n', imageUrl, '\n',username, '\n',firstName )
+
+  const storeUserInDatabase = await prisma.user.create({
+    data: {
+      userId: userID,
+      username: username,
+      firstName: firstName,
+      userEmail: userEmail,
+      imageUrl: imageUrl,
+      userAuthSource: userAuthSource
+    }
+  })
+  console.log(storeUserInDatabase);
+  return res.json({storeUserInDatabase});
+  } catch (error) {
+    if (error instanceof Prisma.PrismaClientKnownRequestError) {
+      // The .code property can be accessed in a type-safe manner
+      if (error.code === 'P2002') {
+        console.log(
+          'There is a unique constraint violation, a new user cannot be created with this userId'
+        )
+        return res.status(409).json({
+          error: 'User already exists',
+          message: 'A user with this ID already exists in the database.'
+        });
+      }
+    }
+    console.error('Unexpected error:', error);
+    return res.status(500).json({
+      error: 'Internal Server Error',
+      message: 'An unexpected error occurred while processing your request.'
+    });
+  }
+}
+)
 // the sign-in route
 app.get('/sign-in', (req, res) => {
   res.render('sign-in')

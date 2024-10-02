@@ -28,7 +28,7 @@ const router = createBrowserRouter([
       { path: '/', element: <IndexPage /> },
       { path: '/contact', element: <ContactPage /> },
       { path: '/sign-in', element: <SignInPage /> },
-      { path: '/sign-up', element: <SignUpPage /> },
+      { path: '/sign-up/*', element: <SignUpPage /> },
       {
         element: <DashboardLayout />,
         path: 'dashboard',
@@ -41,7 +41,5 @@ const router = createBrowserRouter([
 ])
 
 createRoot(document.getElementById('root')!).render(
-  <StrictMode>
-    <RouterProvider router={router} />
-  </StrictMode>,
+  <RouterProvider router={router} />
 )

@@ -13,8 +13,13 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// Decide what user data we want to store in the db
 model User {
-  id    Int     @id @default(autoincrement())
-  email String  @unique
-  name  String?
+  id             Int     @id @default(autoincrement())
+  userId         String  @unique
+  username       String?
+  firstName      String?
+  userEmail      String?
+  imageUrl       String?
+  userAuthSource String?
 }

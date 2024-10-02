@@ -1,5 +1,4 @@
 import { Link } from 'react-router-dom'
-import AuthedStuff from '../AuthedStuff'
 
 export default function DashboardPage() {
 
